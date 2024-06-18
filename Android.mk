@@ -23,7 +23,7 @@ exynos5420_dirs := \
 	libdisplaymodule \
 	libhwcutilsmodule \
 	libhdmimodule \
-    libhwjpeg \
+        libhwjpeg \
 	libsecurepath
 
 ifeq ($(BOARD_USES_VIRTUAL_DISPLAY), true)
