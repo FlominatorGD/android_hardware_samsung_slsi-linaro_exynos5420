@@ -19,7 +19,7 @@
 #include <dlfcn.h>
 
 #include <cutils/ashmem.h>
-#include <cutils/log.h>
+#include <log/log.h>
 
 #include <hardware/hardware.h>
 #include <hardware/gralloc.h>
@@ -32,7 +32,6 @@
 
 #include <utils/Vector.h>
 
-#include <cutils/log.h>
 #include <cutils/atomic.h>
 
 #if HAVE_ANDROID_OS
@@ -49,6 +48,7 @@
 // numbers of buffers for page flipping
 #define NUM_BUFFERS 2
 #define HWC_EXIST 0
+#define USE_BLIT_FRAMEBUFFER 0
 
 struct hwc_callback_entry
 {
@@ -176,7 +176,7 @@ int init_fb(struct private_module_t* module)
     module->info = info;
     module->finfo = finfo;
 
-#if !HWC_EXIST
+#if !HWC_EXIST && USE_BLIT_FRAMEBUFFER
     size_t fbSize = roundUpToPageSize(finfo.line_length * info.yres_virtual);
     module->framebuffer = new private_handle_t(dup(fd), fbSize, 0);
 
