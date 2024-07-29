@@ -91,12 +91,6 @@ extern int gralloc_register_buffer(gralloc_module_t const* module,
 extern int gralloc_unregister_buffer(gralloc_module_t const* module,
                                      buffer_handle_t handle);
 
-#ifdef USES_EXYNOS_CRC_BUFFER_ALLOC
-extern int gralloc_get_tile_num(unsigned int value);
-
-extern bool gralloc_crc_allocation_check(int format, int width, int height, int flags);
-#endif /* USES_EXYNOS_CRC_BUFFER_ALLOC */
-
 /*****************************************************************************/
 
 static struct hw_module_methods_t gralloc_module_methods = {
@@ -245,20 +239,6 @@ static int gralloc_alloc_rgb(int ionfd, int w, int h, int format, int usage,
     if (err) {
         return err;
     }
-
-#ifdef USES_EXYNOS_CRC_BUFFER_ALLOC
-    if (gralloc_crc_allocation_check(format, w, h, usage)) {
-        int fd1 = -1, num_tiles_x, num_tiles_y, crc_size;
-        num_tiles_x = gralloc_get_tile_num(w);
-        num_tiles_y = gralloc_get_tile_num(h);
-        crc_size = num_tiles_x * num_tiles_y * sizeof(long long unsigned int);
-        err = ion_alloc_fd(ionfd, crc_size + sizeof(struct gralloc_crc_header), alignment, heap_mask, ion_flags,
-                           &fd1);
-        *hnd = new private_handle_t(fd, fd1, size, usage, w, h, format, internal_format, frameworkFormat, *stride,
-                                vstride, is_compressible);
-    }
-    else
-#endif /* USES_EXYNOS_CRC_BUFFER_ALLOC */
     {
         *hnd = new private_handle_t(fd, size, usage, w, h, format, internal_format, frameworkFormat, *stride,
                                 vstride, is_compressible);

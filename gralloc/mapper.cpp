@@ -54,39 +54,6 @@ int getIonFd(gralloc_module_t const *module)
     return m->ionfd;
 }
 
-#ifdef USES_EXYNOS_CRC_BUFFER_ALLOC
-int gralloc_get_tile_num(unsigned int value)
-{
-    int tile_num;
-    tile_num = ((value + CRC_TILE_SIZE - 1) & ~(CRC_TILE_SIZE - 1)) / CRC_TILE_SIZE;
-    return tile_num;
-}
-
-bool gralloc_crc_allocation_check(int format, int width, int height, int flags)
-{
-    bool supported = false;
-    switch (format) {
-    case HAL_PIXEL_FORMAT_EXYNOS_ARGB_8888:
-    case HAL_PIXEL_FORMAT_RGBA_8888:
-    case HAL_PIXEL_FORMAT_RGBX_8888:
-    case HAL_PIXEL_FORMAT_BGRA_8888:
-    case HAL_PIXEL_FORMAT_RGB_888:
-    case HAL_PIXEL_FORMAT_RGB_565:
-    case HAL_PIXEL_FORMAT_RAW_SENSOR:
-    case HAL_PIXEL_FORMAT_RAW_OPAQUE:
-    case HAL_PIXEL_FORMAT_BLOB:
-        if (!(flags & GRALLOC_USAGE_PROTECTED) &&
-			(width >= CRC_LIMIT_WIDTH) && (height >= CRC_LIMIT_HEIGHT))
-            supported = true;
-        break;
-    default:
-        break;
-    }
-
-    return supported;
-}
-#endif /* USES_EXYNOS_CRC_BUFFER_ALLOC */
-
 static int gralloc_map(gralloc_module_t const* module, buffer_handle_t handle)
 {
     size_t chroma_vstride = 0;
@@ -128,15 +95,6 @@ static int gralloc_map(gralloc_module_t const* module, buffer_handle_t handle)
         }
         break;
     default:
-#ifdef USES_EXYNOS_CRC_BUFFER_ALLOC
-        if (gralloc_crc_allocation_check(hnd->format, hnd->width, hnd->height, hnd->flags)) {
-            int num_tiles_x, num_tiles_y;
-            num_tiles_x = gralloc_get_tile_num(hnd->width);
-            num_tiles_y = gralloc_get_tile_num(hnd->height);
-            chroma_size = num_tiles_x * num_tiles_y * sizeof(long long unsigned int)
-                + sizeof(struct gralloc_crc_header);
-        }
-#endif /* USES_EXYNOS_CRC_BUFFER_ALLOC */
         break;
     }
 
@@ -207,15 +165,6 @@ static int gralloc_unmap(gralloc_module_t const* module __unused, buffer_handle_
         hnd->base2 = 0;
         break;
     default:
-#ifdef USES_EXYNOS_CRC_BUFFER_ALLOC
-        if (gralloc_crc_allocation_check(hnd->format, hnd->width, hnd->height, hnd->flags)) {
-            int num_tiles_x, num_tiles_y;
-            num_tiles_x = gralloc_get_tile_num(hnd->width);
-            num_tiles_y = gralloc_get_tile_num(hnd->height);
-            chroma_size = num_tiles_x * num_tiles_y * sizeof(long long unsigned int)
-                + sizeof(struct gralloc_crc_header);
-        }
-#endif /* USES_EXYNOS_CRC_BUFFER_ALLOC */
         break;
     }
 
@@ -366,9 +315,6 @@ int gralloc_lock(gralloc_module_t const* module,
     else if (hnd->format == HAL_PIXEL_FORMAT_EXYNOS_YCbCr_420_SPN_S10B)
         vaddr[1] = (int*)vaddr[0] + (hnd->stride * hnd->vstride) + ext_size + (ALIGN(hnd->width / 4, 16) * hnd->vstride) + 64;
 
-#ifdef USES_EXYNOS_CRC_BUFFER_ALLOC
-    if (!gralloc_crc_allocation_check(hnd->format, hnd->width, hnd->height, hnd->flags))
-#endif /* USES_EXYNOS_CRC_BUFFER_ALLOC */
     {
         if (hnd->fd1 >= 0)
             vaddr[1] = INT_TO_PTR(hnd->base1);
@@ -401,9 +347,6 @@ int gralloc_unlock(gralloc_module_t const* module,
         else
             ion_sync_fd(getIonFd(module), hnd->fd);
 
-#ifdef USES_EXYNOS_CRC_BUFFER_ALLOC
-        if (!gralloc_crc_allocation_check(hnd->format, hnd->width, hnd->height, hnd->flags))
-#endif /* USES_EXYNOS_CRC_BUFFER_ALLOC */
         {
             if (hnd->fd1 >= 0)
                 ion_sync_fd(getIonFd(module), hnd->fd1);
@@ -415,9 +358,6 @@ int gralloc_unlock(gralloc_module_t const* module,
     }
 #else
     ion_sync_fd(getIonFd(module), hnd->fd);
-#ifdef USES_EXYNOS_CRC_BUFFER_ALLOC
-    if (!gralloc_crc_allocation_check(hnd->format, hnd->width, hnd->height, hnd->flags))
-#endif /* USES_EXYNOS_CRC_BUFFER_ALLOC */
     {
         if (hnd->fd1 >= 0)
             ion_sync_fd(getIonFd(module), hnd->fd1);
